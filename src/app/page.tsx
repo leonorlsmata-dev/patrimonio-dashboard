@@ -1,4 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
+import { PatrimonySummary } from "@/components/dashboard/patrimony-summary";
+import { AllocationPie } from "@/components/dashboard/allocation-pie";
+import { QuickActions } from "@/components/dashboard/quick-actions";
 
 export default function Home() {
   return (
@@ -7,9 +10,13 @@ export default function Home() {
         title="Dashboard"
         description="Visão geral do teu património"
       />
-      <p className="text-muted-foreground">
-        Dashboard em construção — os componentes serão adicionados em breve.
-      </p>
+      <div className="space-y-6">
+        <PatrimonySummary />
+        <div className="grid gap-6 md:grid-cols-2">
+          <AllocationPie />
+          <QuickActions />
+        </div>
+      </div>
     </div>
   );
 }

@@ -43,6 +43,7 @@ export interface Database {
           sort_order?: number;
           created_at?: string;
         };
+        Relationships: [];
       };
       generic_assets: {
         Row: {
@@ -84,6 +85,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       etf_positions: {
         Row: {
@@ -137,6 +139,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       etf_transactions: {
         Row: {
@@ -175,6 +178,7 @@ export interface Database {
           notes?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       etf_price_history: {
         Row: {
@@ -201,6 +205,7 @@ export interface Database {
           date?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       certificados_aforro: {
         Row: {
@@ -242,6 +247,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       ppr: {
         Row: {
@@ -283,6 +289,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       bank_accounts: {
         Row: {
@@ -318,6 +325,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       liquid_cash: {
         Row: {
@@ -350,6 +358,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       patrimony_snapshots: {
         Row: {
@@ -388,6 +397,7 @@ export interface Database {
           trade_republic_cash_value?: number;
           created_at?: string;
         };
+        Relationships: [];
       };
       goals: {
         Row: {
@@ -435,6 +445,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       alerts: {
         Row: {
@@ -473,10 +484,12 @@ export interface Database {
           is_active?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
