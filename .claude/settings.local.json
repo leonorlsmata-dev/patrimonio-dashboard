@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install @supabase/supabase-js yahoo-finance2 recharts react-hook-form @hookform/resolvers zod date-fns lucide-react next-themes)"
+    ]
+  }
+}
