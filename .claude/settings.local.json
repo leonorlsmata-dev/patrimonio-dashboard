@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install @supabase/supabase-js yahoo-finance2 recharts react-hook-form @hookform/resolvers zod date-fns lucide-react next-themes)"
+      "Bash(npm install @supabase/supabase-js yahoo-finance2 recharts react-hook-form @hookform/resolvers zod date-fns lucide-react next-themes)",
+      "Bash(node -e \"const yf = require\\(''yahoo-finance2''\\); console.log\\(Object.keys\\(yf\\)\\)\")",
+      "Bash(node -e \"const yf = require\\(''yahoo-finance2''\\).default; console.log\\(typeof yf.quote, typeof yf.search\\)\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm run build)"
     ]
   }
 }
