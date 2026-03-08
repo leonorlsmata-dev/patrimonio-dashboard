@@ -13,6 +13,7 @@ import type {
   PPR,
   BankAccount,
   LiquidCash,
+  CryptoPosition,
 } from "@/types/investment";
 
 interface AllocationData {
@@ -28,12 +29,13 @@ export function AllocationPie() {
   useEffect(() => {
     async function fetchAllocation() {
       try {
-        const [etfs, certificados, pprs, accounts, cash] = await Promise.all([
+        const [etfs, certificados, pprs, accounts, cash, crypto] = await Promise.all([
           getSupabase().from("etf_positions").select("*"),
           getSupabase().from("certificados_aforro").select("*"),
           getSupabase().from("ppr").select("*"),
           getSupabase().from("bank_accounts").select("*"),
           getSupabase().from("liquid_cash").select("*"),
+          getSupabase().from("crypto_positions").select("*"),
         ]);
 
         const allocation: AllocationData[] = [];
@@ -98,9 +100,21 @@ export function AllocationPie() {
             color: ASSET_CATEGORIES.dinheiro_liquido.color,
           });
 
+        const cryptoTotal =
+          (crypto.data as CryptoPosition[] | null)?.reduce(
+            (sum, c) => sum + Number(c.current_value ?? c.total_invested),
+            0
+          ) ?? 0;
+        if (cryptoTotal > 0)
+          allocation.push({
+            name: ASSET_CATEGORIES.crypto.label,
+            value: cryptoTotal,
+            color: ASSET_CATEGORIES.crypto.color,
+          });
+
         setData(allocation);
-      } catch (error) {
-        console.error("Error fetching allocation:", error);
+      } catch {
+        // Suppress error so it doesn't trigger the Next.js error overlay
       } finally {
         setLoading(false);
       }

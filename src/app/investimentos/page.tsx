@@ -23,6 +23,7 @@ import type {
   PPR,
   BankAccount,
   LiquidCash,
+  CryptoPosition,
 } from "@/types/investment";
 
 interface InvestmentRow {
@@ -41,14 +42,16 @@ export default function InvestimentosPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    const supabase = getSupabase();
-    const [etfs, certs, pprs, accounts, cash] = await Promise.all([
-      supabase.from("etf_positions").select("*"),
-      supabase.from("certificados_aforro").select("*"),
-      supabase.from("ppr").select("*"),
-      supabase.from("bank_accounts").select("*"),
-      supabase.from("liquid_cash").select("*"),
-    ]);
+    try {
+      const supabase = getSupabase();
+      const [etfs, certs, pprs, accounts, cash, crypto] = await Promise.all([
+        supabase.from("etf_positions").select("*"),
+        supabase.from("certificados_aforro").select("*"),
+        supabase.from("ppr").select("*"),
+        supabase.from("bank_accounts").select("*"),
+        supabase.from("liquid_cash").select("*"),
+        supabase.from("crypto_positions").select("*"),
+      ]);
 
     const allRows: InvestmentRow[] = [];
 
@@ -128,8 +131,28 @@ export default function InvestimentosPage() {
       });
     });
 
+    ((crypto.data as CryptoPosition[] | null) ?? []).forEach((c) => {
+      const inv = Number(c.total_invested);
+      const cur = Number(c.current_value ?? c.total_invested);
+      const gl = cur - inv;
+      allRows.push({
+        id: c.id,
+        name: `${c.symbol} - ${c.name}`,
+        category: "crypto",
+        categoryColor: ASSET_CATEGORIES.crypto.color,
+        invested: inv,
+        currentValue: cur,
+        gainLoss: gl,
+        gainLossPercent: inv > 0 ? (gl / inv) * 100 : 0,
+      });
+    });
+
     setRows(allRows);
-    setLoading(false);
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -256,6 +279,7 @@ export default function InvestimentosPage() {
               <TabsTrigger value="certificado_aforro">Certificados</TabsTrigger>
               <TabsTrigger value="ppr">PPR</TabsTrigger>
               <TabsTrigger value="conta_bancaria">Contas</TabsTrigger>
+              <TabsTrigger value="crypto">Crypto</TabsTrigger>
             </TabsList>
             <TabsContent value="todos">{renderTable(rows)}</TabsContent>
             <TabsContent value="etf">
@@ -275,6 +299,9 @@ export default function InvestimentosPage() {
                     r.category === "dinheiro_liquido"
                 )
               )}
+            </TabsContent>
+            <TabsContent value="crypto">
+              {renderTable(rows.filter((r) => r.category === "crypto"))}
             </TabsContent>
           </Tabs>
         </div>

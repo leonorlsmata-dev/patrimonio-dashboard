@@ -13,6 +13,7 @@ import type {
   PPR,
   BankAccount,
   LiquidCash,
+  CryptoPosition,
 } from "@/types/investment";
 
 interface SummaryData {
@@ -29,12 +30,13 @@ export function PatrimonySummary() {
   useEffect(() => {
     async function fetchSummary() {
       try {
-        const [etfs, certificados, pprs, accounts, cash] = await Promise.all([
+        const [etfs, certificados, pprs, accounts, cash, crypto] = await Promise.all([
           getSupabase().from("etf_positions").select("*"),
           getSupabase().from("certificados_aforro").select("*"),
           getSupabase().from("ppr").select("*"),
           getSupabase().from("bank_accounts").select("*"),
           getSupabase().from("liquid_cash").select("*"),
+          getSupabase().from("crypto_positions").select("*"),
         ]);
 
         let totalInvested = 0;
@@ -67,13 +69,18 @@ export function PatrimonySummary() {
           totalValue += amt;
         });
 
+        (crypto.data as CryptoPosition[] | null)?.forEach((c) => {
+          totalInvested += Number(c.total_invested);
+          totalValue += Number(c.current_value ?? c.total_invested);
+        });
+
         const gainLoss = totalValue - totalInvested;
         const gainLossPercent =
           totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0;
 
         setData({ totalValue, totalInvested, gainLoss, gainLossPercent });
-      } catch (error) {
-        console.error("Error fetching summary:", error);
+      } catch {
+        // Suppress error so it doesn't trigger the Next.js error overlay
       } finally {
         setLoading(false);
       }
