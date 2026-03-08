@@ -13,6 +13,9 @@ export type PatrimonySnapshot =
   Database["public"]["Tables"]["patrimony_snapshots"]["Row"];
 export type Goal = Database["public"]["Tables"]["goals"]["Row"];
 export type Alert = Database["public"]["Tables"]["alerts"]["Row"];
+export type CryptoPosition = Database["public"]["Tables"]["crypto_positions"]["Row"];
+export type CryptoTransaction = Database["public"]["Tables"]["crypto_transactions"]["Row"];
+export type ExchangeRate = Database["public"]["Tables"]["exchange_rates"]["Row"];
 
 export interface CategorySummary {
   name: string;

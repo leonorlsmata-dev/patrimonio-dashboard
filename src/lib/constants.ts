@@ -21,6 +21,7 @@ export const ASSET_CATEGORIES = {
     color: "#EF4444",
     icon: "CircleDollarSign",
   },
+  crypto: { label: "Crypto", color: "#F7931A", icon: "Bitcoin" },
 } as const;
 
 export const TAX_RATES = {
@@ -36,6 +37,7 @@ export const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: "LayoutDashboard" },
   { href: "/investimentos", label: "Investimentos", icon: "Briefcase" },
   { href: "/investimentos/etfs", label: "ETFs", icon: "TrendingUp" },
+  { href: "/investimentos/crypto", label: "Crypto", icon: "Bitcoin" },
   {
     href: "/investimentos/certificados",
     label: "Certificados",
@@ -43,6 +45,7 @@ export const NAV_ITEMS = [
   },
   { href: "/investimentos/ppr", label: "PPR", icon: "PiggyBank" },
   { href: "/investimentos/contas", label: "Contas", icon: "Landmark" },
+  { href: "/transacoes", label: "Transações", icon: "ArrowLeftRight" },
   { href: "/objetivos", label: "Objetivos", icon: "Target" },
   { href: "/projecoes", label: "Projeções", icon: "TrendingUp" },
   { href: "/impostos", label: "Impostos", icon: "Receipt" },

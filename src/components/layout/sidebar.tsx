@@ -12,6 +12,8 @@ import {
   Target,
   Receipt,
   Bell,
+  Bitcoin,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/constants";
@@ -27,6 +29,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Target,
   Receipt,
   Bell,
+  Bitcoin,
+  ArrowLeftRight,
 };
 
 export function Sidebar() {
@@ -34,14 +38,13 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 z-40">
-      <div className="flex flex-col flex-grow border-r bg-card pt-5 pb-4 overflow-y-auto">
-        <div className="flex items-center flex-shrink-0 px-6">
+      <div className="flex flex-col flex-grow border-r bg-card overflow-y-auto">
+        <div className="flex h-14 items-center shrink-0 px-6 border-b">
           <h1 className="text-xl font-bold tracking-tight">
             Meu Património
           </h1>
         </div>
-        <Separator className="mt-5" />
-        <nav className="flex-1 mt-5 px-3 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV_ITEMS.map((item) => {
             const Icon = iconMap[item.icon];
             const isActive =

@@ -371,6 +371,7 @@ export interface Database {
           bank_value: number;
           cash_value: number;
           trade_republic_cash_value: number;
+          crypto_value: number;
           created_at: string;
         };
         Insert: {
@@ -383,6 +384,7 @@ export interface Database {
           bank_value?: number;
           cash_value?: number;
           trade_republic_cash_value?: number;
+          crypto_value?: number;
           created_at?: string;
         };
         Update: {
@@ -395,6 +397,7 @@ export interface Database {
           bank_value?: number;
           cash_value?: number;
           trade_republic_cash_value?: number;
+          crypto_value?: number;
           created_at?: string;
         };
         Relationships: [];
@@ -482,6 +485,126 @@ export interface Database {
           is_triggered?: boolean;
           triggered_at?: string | null;
           is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      crypto_positions: {
+        Row: {
+          id: string;
+          category_id: string;
+          coin_id: string;
+          symbol: string;
+          name: string;
+          shares: number;
+          avg_buy_price: number;
+          total_invested: number;
+          currency: string;
+          current_price: number | null;
+          current_value: number | null;
+          last_price_update: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          category_id: string;
+          coin_id: string;
+          symbol: string;
+          name: string;
+          shares: number;
+          avg_buy_price: number;
+          total_invested: number;
+          currency?: string;
+          current_price?: number | null;
+          current_value?: number | null;
+          last_price_update?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          category_id?: string;
+          coin_id?: string;
+          symbol?: string;
+          name?: string;
+          shares?: number;
+          avg_buy_price?: number;
+          total_invested?: number;
+          currency?: string;
+          current_price?: number | null;
+          current_value?: number | null;
+          last_price_update?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      crypto_transactions: {
+        Row: {
+          id: string;
+          crypto_position_id: string;
+          type: "buy" | "sell";
+          shares: number;
+          price_per_share: number;
+          total_amount: number;
+          fees: number;
+          transaction_date: string;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          crypto_position_id: string;
+          type: "buy" | "sell";
+          shares: number;
+          price_per_share: number;
+          total_amount: number;
+          fees?: number;
+          transaction_date: string;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          crypto_position_id?: string;
+          type?: "buy" | "sell";
+          shares?: number;
+          price_per_share?: number;
+          total_amount?: number;
+          fees?: number;
+          transaction_date?: string;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      exchange_rates: {
+        Row: {
+          id: string;
+          from_currency: string;
+          to_currency: string;
+          rate: number;
+          date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_currency: string;
+          to_currency: string;
+          rate: number;
+          date: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          from_currency?: string;
+          to_currency?: string;
+          rate?: number;
+          date?: string;
           created_at?: string;
         };
         Relationships: [];
