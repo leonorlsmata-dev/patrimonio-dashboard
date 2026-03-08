@@ -4,40 +4,47 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EtfCard } from "@/components/investments/etf-card";
 import { EtfForm, type EtfFormData } from "@/components/investments/etf-form";
+import {
+  EtfTransactionForm,
+  type EtfTransactionFormData,
+} from "@/components/investments/etf-transaction-form";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { getSupabase } from "@/lib/supabase/client";
+import { recalculatePosition } from "@/lib/calculations";
 import { TrendingUp, Plus } from "lucide-react";
 import { toast } from "sonner";
-import type { EtfPosition } from "@/types/investment";
+import type { EtfPosition, EtfTransaction } from "@/types/investment";
 
 export default function EtfsPage() {
   const [positions, setPositions] = useState<EtfPosition[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
+  const [transactionFormOpen, setTransactionFormOpen] = useState(false);
+  const [editFormOpen, setEditFormOpen] = useState(false);
   const [editingPosition, setEditingPosition] = useState<EtfPosition | null>(
     null
   );
 
   const fetchPositions = useCallback(async () => {
-    const { data } = await getSupabase()
-      .from("etf_positions")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setPositions((data as EtfPosition[] | null) ?? []);
-    setLoading(false);
+    try {
+      const { data } = await getSupabase()
+        .from("etf_positions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setPositions((data as EtfPosition[] | null) ?? []);
+    } catch {
+      setPositions([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     fetchPositions();
   }, [fetchPositions]);
 
-  async function handleSubmit(formData: EtfFormData) {
+  async function handleTransactionSubmit(formData: EtfTransactionFormData) {
     const supabase = getSupabase();
-    const totalInvested = formData.shares * formData.avg_buy_price;
-    const currentValue = formData.current_price
-      ? formData.shares * formData.current_price
-      : totalInvested;
 
     // Get the ETF category ID
     const { data: category } = await supabase
@@ -50,28 +57,105 @@ export default function EtfsPage() {
       throw new Error("ETF category not found");
     }
 
-    if (editingPosition) {
-      const { error } = await supabase
+    // Check if position exists for this ticker
+    const { data: existing } = await supabase
+      .from("etf_positions")
+      .select("id")
+      .eq("ticker", formData.ticker)
+      .maybeSingle();
+
+    let positionId: string;
+
+    if (existing) {
+      positionId = (existing as { id: string }).id;
+    } else {
+      // Create new position with initial zeros
+      const { data: newPosition, error: insertError } = await supabase
         .from("etf_positions")
-        .update({
+        .insert({
+          category_id: (category as { id: string }).id,
           ticker: formData.ticker,
           name: formData.name,
-          shares: formData.shares,
-          avg_buy_price: formData.avg_buy_price,
-          total_invested: totalInvested,
-          current_price: formData.current_price ?? null,
-          current_value: currentValue,
           broker: formData.broker,
-          notes: formData.notes || null,
-          updated_at: new Date().toISOString(),
+          shares: 0,
+          avg_buy_price: 0,
+          total_invested: 0,
+          current_price: formData.current_price ?? null,
+          current_value: 0,
+          notes: null,
         })
-        .eq("id", editingPosition.id);
+        .select("id")
+        .single();
 
-      if (error) throw error;
-      toast.success("ETF atualizado com sucesso");
-    } else {
-      const { error } = await supabase.from("etf_positions").insert({
-        category_id: category.id,
+      if (insertError || !newPosition) throw insertError;
+      positionId = (newPosition as { id: string }).id;
+    }
+
+    // Insert the transaction
+    const totalAmount =
+      formData.shares * formData.price_per_share + formData.fees;
+
+    const { error: txError } = await supabase
+      .from("etf_transactions")
+      .insert({
+        etf_position_id: positionId,
+        type: formData.type,
+        shares: formData.shares,
+        price_per_share: formData.price_per_share,
+        total_amount: totalAmount,
+        fees: formData.fees,
+        transaction_date: formData.transaction_date,
+        notes: formData.notes || null,
+      });
+
+    if (txError) throw txError;
+
+    // Fetch ALL transactions for this position to recalculate
+    const { data: allTx } = await supabase
+      .from("etf_transactions")
+      .select("*")
+      .eq("etf_position_id", positionId)
+      .order("transaction_date", { ascending: true });
+
+    const transactions = (allTx as EtfTransaction[] | null) ?? [];
+    const recalc = recalculatePosition(transactions);
+
+    // Calculate current value
+    const priceForValue = formData.current_price ?? recalc.avg_buy_price;
+    const currentValue = recalc.shares * priceForValue;
+
+    // Update position with recalculated values
+    const { error: updateError } = await supabase
+      .from("etf_positions")
+      .update({
+        shares: recalc.shares,
+        avg_buy_price: recalc.avg_buy_price,
+        total_invested: recalc.total_invested,
+        current_price: formData.current_price ?? null,
+        current_value: currentValue,
+        broker: formData.broker,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", positionId);
+
+    if (updateError) throw updateError;
+
+    toast.success("Transação registada com sucesso");
+    fetchPositions();
+  }
+
+  async function handleEditSubmit(formData: EtfFormData) {
+    if (!editingPosition) return;
+
+    const supabase = getSupabase();
+    const totalInvested = formData.shares * formData.avg_buy_price;
+    const currentValue = formData.current_price
+      ? formData.shares * formData.current_price
+      : totalInvested;
+
+    const { error } = await supabase
+      .from("etf_positions")
+      .update({
         ticker: formData.ticker,
         name: formData.name,
         shares: formData.shares,
@@ -81,12 +165,12 @@ export default function EtfsPage() {
         current_value: currentValue,
         broker: formData.broker,
         notes: formData.notes || null,
-      });
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", editingPosition.id);
 
-      if (error) throw error;
-      toast.success("ETF adicionado com sucesso");
-    }
-
+    if (error) throw error;
+    toast.success("ETF atualizado com sucesso");
     setEditingPosition(null);
     fetchPositions();
   }
@@ -108,7 +192,7 @@ export default function EtfsPage() {
 
   function handleEdit(position: EtfPosition) {
     setEditingPosition(position);
-    setFormOpen(true);
+    setEditFormOpen(true);
   }
 
   return (
@@ -118,9 +202,13 @@ export default function EtfsPage() {
           title="ETFs"
           description="Gestão das tuas posições em ETFs"
         />
-        <Button onClick={() => { setEditingPosition(null); setFormOpen(true); }}>
+        <Button
+          onClick={() => {
+            setTransactionFormOpen(true);
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" />
-          Adicionar ETF
+          Registar Compra
         </Button>
       </div>
 
@@ -134,10 +222,10 @@ export default function EtfsPage() {
         <EmptyState
           icon={TrendingUp}
           title="Sem ETFs"
-          description="Ainda não adicionaste nenhum ETF. Adiciona o teu primeiro para começar a acompanhar."
+          description="Ainda não adicionaste nenhum ETF. Regista a tua primeira compra para começar a acompanhar."
           action={{
-            label: "Adicionar ETF",
-            onClick: () => setFormOpen(true),
+            label: "Registar Compra",
+            onClick: () => setTransactionFormOpen(true),
           }}
         />
       ) : (
@@ -153,10 +241,16 @@ export default function EtfsPage() {
         </div>
       )}
 
+      <EtfTransactionForm
+        open={transactionFormOpen}
+        onOpenChange={setTransactionFormOpen}
+        onSubmit={handleTransactionSubmit}
+      />
+
       <EtfForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        onSubmit={handleSubmit}
+        open={editFormOpen}
+        onOpenChange={setEditFormOpen}
+        onSubmit={handleEditSubmit}
         initialData={editingPosition}
       />
     </div>
