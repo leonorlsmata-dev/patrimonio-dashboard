@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PatrimonySummary } from "@/components/dashboard/patrimony-summary";
 import { AllocationPie } from "@/components/dashboard/allocation-pie";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { HistoricalChart } from "@/components/dashboard/historical-chart";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
           <AllocationPie />
           <QuickActions />
         </div>
+        <HistoricalChart />
       </div>
     </div>
   );
