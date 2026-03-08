@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { getQuote } from "@/lib/finance/yahoo";
-import type { EtfPosition } from "@/types/investment";
+import { getCoinQuote } from "@/lib/finance/coingecko";
+import { getExchangeRate } from "@/lib/finance/exchange-rate";
+import type { EtfPosition, CryptoPosition } from "@/types/investment";
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
@@ -15,10 +17,6 @@ export async function GET(request: NextRequest) {
   // 1. Get all ETF positions
   const { data: positions } = await supabase.from("etf_positions").select("*");
   const typedPositions = (positions as EtfPosition[] | null) ?? [];
-
-  if (typedPositions.length === 0) {
-    return NextResponse.json({ message: "No positions to update" });
-  }
 
   // 2. Get unique tickers
   const tickers = [...new Set(typedPositions.map((p) => p.ticker))];
@@ -59,13 +57,58 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 4. Create patrimony snapshot
-  const [etfs, certs, pprs, accounts, cashData] = await Promise.all([
+  // 4. Update crypto prices
+  const { data: cryptoPositions } = await supabase.from("crypto_positions").select("*");
+  const typedCryptoPositions = (cryptoPositions as CryptoPosition[] | null) ?? [];
+  const coinIds = [...new Set(typedCryptoPositions.map((p) => p.coin_id))];
+  const updatedCoins: string[] = [];
+  const cryptoErrors: string[] = [];
+
+  for (const coinId of coinIds) {
+    try {
+      const quote = await getCoinQuote(coinId);
+
+      const coinPositions = typedCryptoPositions.filter((p) => p.coin_id === coinId);
+      for (const pos of coinPositions) {
+        await supabase
+          .from("crypto_positions")
+          .update({
+            current_price: quote.price,
+            current_value: Number(pos.shares) * quote.price,
+            last_price_update: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", pos.id);
+      }
+
+      updatedCoins.push(coinId);
+    } catch (error) {
+      console.error(`Failed to update crypto ${coinId}:`, error);
+      cryptoErrors.push(coinId);
+    }
+  }
+
+  // 5. Update exchange rates
+  try {
+    const usdToEur = await getExchangeRate("USD", "EUR");
+    await supabase.from("exchange_rates").upsert({
+      from_currency: "USD",
+      to_currency: "EUR",
+      rate: usdToEur,
+      date: new Date().toISOString().split("T")[0],
+    });
+  } catch (error) {
+    console.error("Failed to update exchange rates:", error);
+  }
+
+  // 6. Create patrimony snapshot
+  const [etfs, certs, pprs, accounts, cashData, cryptoData] = await Promise.all([
     supabase.from("etf_positions").select("current_value, total_invested"),
     supabase.from("certificados_aforro").select("current_value"),
     supabase.from("ppr").select("current_value"),
     supabase.from("bank_accounts").select("balance"),
     supabase.from("liquid_cash").select("amount"),
+    supabase.from("crypto_positions").select("current_value, total_invested"),
   ]);
 
   const etfValue =
@@ -93,8 +136,13 @@ export async function GET(request: NextRequest) {
       (sum, c) => sum + Number(c.amount),
       0
     );
+  const cryptoValue =
+    ((cryptoData.data as Array<{ current_value: number | null; total_invested: number }>) ?? []).reduce(
+      (sum, c) => sum + Number(c.current_value ?? c.total_invested),
+      0
+    );
 
-  const totalValue = etfValue + certValue + pprValue + bankValue + cashValue;
+  const totalValue = etfValue + certValue + pprValue + bankValue + cashValue + cryptoValue;
 
   await supabase.from("patrimony_snapshots").upsert({
     date: new Date().toISOString().split("T")[0],
@@ -104,13 +152,14 @@ export async function GET(request: NextRequest) {
     ppr_value: pprValue,
     bank_value: bankValue,
     cash_value: cashValue,
+    crypto_value: cryptoValue,
     trade_republic_cash_value: 0,
   });
 
   return NextResponse.json({
     message: "Prices updated",
-    updated: updatedTickers,
-    errors,
+    updated: { etfs: updatedTickers, crypto: updatedCoins },
+    errors: { etfs: errors, crypto: cryptoErrors },
     snapshot: { totalValue },
   });
 }
