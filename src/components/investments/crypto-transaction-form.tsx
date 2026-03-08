@@ -233,6 +233,7 @@ export function CryptoTransactionForm({
                       onClick={() => handleSelectCoin(coin)}
                     >
                       {coin.thumb && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={coin.thumb}
                           alt=""

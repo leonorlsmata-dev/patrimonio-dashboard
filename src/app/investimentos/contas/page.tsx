@@ -31,14 +31,20 @@ export default function ContasPage() {
   const [editingCash, setEditingCash] = useState<LiquidCash | null>(null);
 
   const fetchAll = useCallback(async () => {
-    const supabase = getSupabase();
-    const [accountsRes, cashRes] = await Promise.all([
-      supabase.from("bank_accounts").select("*").order("created_at", { ascending: false }),
-      supabase.from("liquid_cash").select("*").order("created_at", { ascending: false }),
-    ]);
-    setAccounts((accountsRes.data as BankAccount[] | null) ?? []);
-    setCash((cashRes.data as LiquidCash[] | null) ?? []);
-    setLoading(false);
+    try {
+      const supabase = getSupabase();
+      const [accountsRes, cashRes] = await Promise.all([
+        supabase.from("bank_accounts").select("*").order("created_at", { ascending: false }),
+        supabase.from("liquid_cash").select("*").order("created_at", { ascending: false }),
+      ]);
+      setAccounts((accountsRes.data as BankAccount[] | null) ?? []);
+      setCash((cashRes.data as LiquidCash[] | null) ?? []);
+    } catch {
+      setAccounts([]);
+      setCash([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

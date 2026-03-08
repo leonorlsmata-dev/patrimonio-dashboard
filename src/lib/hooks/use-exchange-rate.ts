@@ -6,14 +6,12 @@ import { getSupabase } from "@/lib/supabase/client";
 const cachedRates: Record<string, number> = {};
 
 export function useExchangeRate(from: string, to: string): number | null {
-  const [rate, setRate] = useState<number | null>(
-    from === to ? 1 : cachedRates[`${from}_${to}`] ?? null
-  );
+  const [fetchedRate, setFetchedRate] = useState<number | null>(null);
 
   useEffect(() => {
-    if (from === to) { setRate(1); return; }
+    if (from === to) return;
     const key = `${from}_${to}`;
-    if (cachedRates[key]) { setRate(cachedRates[key]); return; }
+    if (cachedRates[key]) return;
 
     async function fetchRate() {
       try {
@@ -29,7 +27,7 @@ export function useExchangeRate(from: string, to: string): number | null {
         if (data) {
           const r = Number((data as { rate: number }).rate);
           cachedRates[key] = r;
-          setRate(r);
+          setFetchedRate(r);
         }
       } catch {
         // Ignore fetch errors, rate stays null
@@ -39,5 +37,8 @@ export function useExchangeRate(from: string, to: string): number | null {
     fetchRate();
   }, [from, to]);
 
-  return rate;
+  if (from === to) return 1;
+  const key = `${from}_${to}`;
+  if (cachedRates[key]) return cachedRates[key];
+  return fetchedRate;
 }

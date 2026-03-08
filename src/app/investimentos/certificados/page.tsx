@@ -23,12 +23,17 @@ export default function CertificadosPage() {
   const [editing, setEditing] = useState<CertificadoAforro | null>(null);
 
   const fetch = useCallback(async () => {
-    const { data } = await getSupabase()
-      .from("certificados_aforro")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setItems((data as CertificadoAforro[] | null) ?? []);
-    setLoading(false);
+    try {
+      const { data } = await getSupabase()
+        .from("certificados_aforro")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setItems((data as CertificadoAforro[] | null) ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

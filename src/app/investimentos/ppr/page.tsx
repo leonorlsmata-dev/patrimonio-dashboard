@@ -27,12 +27,17 @@ export default function PPRPage() {
   const [editing, setEditing] = useState<PPR | null>(null);
 
   const fetchItems = useCallback(async () => {
-    const { data } = await getSupabase()
-      .from("ppr")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setItems((data as PPR[] | null) ?? []);
-    setLoading(false);
+    try {
+      const { data } = await getSupabase()
+        .from("ppr")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setItems((data as PPR[] | null) ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
