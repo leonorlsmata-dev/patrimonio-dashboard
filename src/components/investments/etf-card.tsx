@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
 import { PercentageBadge } from "@/components/shared/percentage-badge";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, History } from "lucide-react";
+import { TransactionHistory } from "./transaction-history";
 import type { EtfPosition } from "@/types/investment";
 
 interface EtfCardProps {
@@ -15,6 +17,7 @@ interface EtfCardProps {
 }
 
 export function EtfCard({ position, onEdit, onDelete }: EtfCardProps) {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const currentValue =
     Number(position.current_value) ||
     Number(position.shares) * Number(position.current_price ?? position.avg_buy_price);
@@ -36,6 +39,9 @@ export function EtfCard({ position, onEdit, onDelete }: EtfCardProps) {
           </p>
         </div>
         <div className="flex gap-1">
+          <Button variant="ghost" size="icon-xs" onClick={() => setHistoryOpen(true)}>
+            <History className="h-3 w-3" />
+          </Button>
           <Button variant="ghost" size="icon-xs" onClick={() => onEdit(position)}>
             <Pencil className="h-3 w-3" />
           </Button>
@@ -88,6 +94,14 @@ export function EtfCard({ position, onEdit, onDelete }: EtfCardProps) {
           </Badge>
         )}
       </CardContent>
+      <TransactionHistory
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        positionId={position.id}
+        positionName={`${position.ticker} - ${position.name}`}
+        tableName="etf_transactions"
+        foreignKey="etf_position_id"
+      />
     </Card>
   );
 }
